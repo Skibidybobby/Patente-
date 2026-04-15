@@ -32,8 +32,19 @@ function getSupabaseUrl(): string {
   return requireEnv('NEXT_PUBLIC_SUPABASE_URL')
 }
 
-function getAnonKey(): string {
-  return requireEnv('NEXT_PUBLIC_SUPABASE_ANON_KEY')
+function getPublishableKey(): string {
+  // Supabase raccomanda la publishable key (sb_publishable_...) per progetti
+  // nuovi. Fallback a NEXT_PUBLIC_SUPABASE_ANON_KEY per .env legacy.
+  const key =
+    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ??
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  if (!key) {
+    throw new Error(
+      '[PatenteGo] Missing NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY. ' +
+        'Copy .env.example to .env.local and fill in the Supabase credentials.',
+    )
+  }
+  return key
 }
 
 /**
@@ -42,7 +53,7 @@ function getAnonKey(): string {
  * for session persistence (handled by @supabase/ssr automatically).
  */
 export function createBrowserSupabaseClient() {
-  return createBrowserClient<Database>(getSupabaseUrl(), getAnonKey())
+  return createBrowserClient<Database>(getSupabaseUrl(), getPublishableKey())
 }
 
 /**
@@ -56,7 +67,7 @@ export function createBrowserSupabaseClient() {
 export async function createServerSupabaseClient() {
   const cookieStore = await cookies()
 
-  return createServerClient<Database>(getSupabaseUrl(), getAnonKey(), {
+  return createServerClient<Database>(getSupabaseUrl(), getPublishableKey(), {
     cookies: {
       getAll() {
         return cookieStore.getAll()

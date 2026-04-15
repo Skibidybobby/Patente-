@@ -134,15 +134,15 @@ cp .env.example .env.local
 Poi prendi i valori dalla Dashboard Supabase → **Project Settings →
 API**:
 
-| Variabile                         | Fonte                                        |
-| --------------------------------- | -------------------------------------------- |
-| `NEXT_PUBLIC_SUPABASE_URL`        | **Project URL** (già pre-compilato)          |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY`   | **Publishable key** (`sb_publishable_...`) o legacy `anon` |
-| `SUPABASE_SERVICE_ROLE_KEY`       | **Service role key** — NON esporla al browser |
+| Variabile                              | Fonte                                        |
+| -------------------------------------- | -------------------------------------------- |
+| `NEXT_PUBLIC_SUPABASE_URL`             | **Project URL** (già pre-compilato)          |
+| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | **Publishable key** (`sb_publishable_...`)   |
+| `SUPABASE_SERVICE_ROLE_KEY`            | **Service role key** — NON esporla al browser |
 
-> Usa la **publishable key** moderna (`sb_publishable_...`) se disponibile:
-> è ruotabile in modo indipendente dalla legacy `anon`. Supabase raccomanda
-> questa per progetti nuovi.
+> Il codice usa la publishable key moderna (`sb_publishable_...`), visibile
+> nella Dashboard Supabase → **Project Settings → API Keys → Publishable key**.
+> È ruotabile in modo indipendente dalla legacy `anon` JWT.
 
 Prova che tutto funzioni:
 
@@ -157,7 +157,7 @@ npm run dev
 ```bash
 # una volta fatto vercel link (vedi passo 4):
 vercel env add NEXT_PUBLIC_SUPABASE_URL production preview development
-vercel env add NEXT_PUBLIC_SUPABASE_ANON_KEY production preview development
+vercel env add NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY production preview development
 vercel env add SUPABASE_SERVICE_ROLE_KEY production preview
 ```
 

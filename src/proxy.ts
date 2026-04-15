@@ -17,7 +17,9 @@ export async function proxy(request: NextRequest) {
   let response = NextResponse.next({ request })
 
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  const supabaseKey =
+    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ??
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
   // In dev potrebbe mancare .env.local — non bloccare i page load, ma
   // proxy non ha modo di rinfrescare la sessione.
   if (!supabaseUrl || !supabaseKey) return response
