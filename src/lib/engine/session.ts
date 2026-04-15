@@ -14,6 +14,7 @@ import {
   getPhaseItems,
   updateProgressAfterAnswer,
 } from './rotta'
+import { EXAM_SIZE } from './simulator'
 import type {
   AnswerResult,
   ConceptProgress,
@@ -26,9 +27,6 @@ import type {
 
 /** Soglia sotto la quale una risposta corretta viene mappata a Rating=Easy. */
 export const FAST_ANSWER_THRESHOLD_MS = 5000
-
-/** Dimensione fissa di una sessione di simulazione (esame reale). */
-export const EXAM_SIZE = 30
 
 /** Pair (quiz_item_id, FSRSCard) ordinato per urgenza. */
 export interface DueCard {
