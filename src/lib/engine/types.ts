@@ -45,6 +45,10 @@ export interface SessionState {
   items_correct: number
   items_total: number
   argomenti_used: Set<number>
+  /** Conteggio errori per argomento_numero — popolato da `recordAnswer`. */
+  errori_per_argomento: Map<number, number>
+  /** Concept id che hanno avanzato di fase durante questa sessione. */
+  concetti_avanzati: string[]
   started_at: Date
 }
 
