@@ -353,6 +353,54 @@ export type Database = {
           },
         ]
       }
+      concetti_progress: {
+        Row: {
+          id: string
+          user_id: string
+          concetto_id: string
+          current_phase: FaseRottaDb
+          phase_items_completed: number
+          phase_items_correct: number
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          concetto_id: string
+          current_phase?: FaseRottaDb
+          phase_items_completed?: number
+          phase_items_correct?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          concetto_id?: string
+          current_phase?: FaseRottaDb
+          phase_items_completed?: number
+          phase_items_correct?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'concetti_progress_user_id_fkey'
+            columns: ['user_id']
+            isOneToOne: false
+            referencedRelation: 'profiles'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'concetti_progress_concetto_id_fkey'
+            columns: ['concetto_id']
+            isOneToOne: false
+            referencedRelation: 'concetti'
+            referencedColumns: ['id']
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -384,3 +432,4 @@ export type QuizItem = Tables<'quiz_items'>
 export type FsrsCard = Tables<'fsrs_cards'>
 export type Sessione = Tables<'sessioni'>
 export type Risposta = Tables<'risposte'>
+export type ConcettoProgressRow = Tables<'concetti_progress'>

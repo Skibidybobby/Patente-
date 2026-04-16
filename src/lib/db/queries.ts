@@ -8,17 +8,28 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type {
   Argomento,
+  ConcettoProgressRow,
   Concetto,
   Database,
+  FaseRottaDb,
   FsrsCard,
   Profile,
   QuizItem,
   Sessione,
   TablesInsert,
+  TablesUpdate,
 } from '@/types/database'
 import type { ModalitaSessione } from '@/types/rotta'
 
 type DbClient = SupabaseClient<Database>
+
+/**
+ * Quiz item arricchito con `argomento_numero` (1-25), la forma attesa
+ * dall'engine R.O.T.T.A. per l'interleaving (`src/lib/engine/types.ts`).
+ */
+export interface QuizItemWithArgomento extends QuizItem {
+  argomento_numero: number
+}
 
 // ----------------------------------------------------------------------------
 // Auth + profile
@@ -246,4 +257,176 @@ export async function getRecentSessioni(
     .limit(limit)
   if (error) throw error
   return data ?? []
+}
+
+/** Tutte le risposte della sessione, in ordine di registrazione. */
+export async function getRisposteForSessione(
+  db: DbClient,
+  sessioneId: string,
+): Promise<
+  Array<{
+    quiz_item_id: string
+    corretta: boolean
+    created_at: string
+    argomento_numero: number | null
+  }>
+> {
+  const { data, error } = await db
+    .from('risposte')
+    .select(
+      'quiz_item_id, corretta, created_at, quiz_items!inner(concetti!inner(argomenti!inner(numero)))',
+    )
+    .eq('sessione_id', sessioneId)
+    .order('created_at', { ascending: true })
+  if (error) throw error
+  const rows = data ?? []
+  return rows.map((r) => {
+    type JoinedRow = {
+      quiz_item_id: string
+      corretta: boolean
+      created_at: string
+      quiz_items?: {
+        concetti?: {
+          argomenti?: { numero?: number }
+        }
+      } | null
+    }
+    const row = r as unknown as JoinedRow
+    return {
+      quiz_item_id: row.quiz_item_id,
+      corretta: row.corretta,
+      created_at: row.created_at,
+      argomento_numero: row.quiz_items?.concetti?.argomenti?.numero ?? null,
+    }
+  })
+}
+
+// ----------------------------------------------------------------------------
+// Concetti progress (stato R.O.T.T.A. per utente × concetto)
+// ----------------------------------------------------------------------------
+
+/** Tutti i progress R.O.T.T.A. dell'utente. */
+export async function getConcettiProgressForUser(
+  db: DbClient,
+  userId: string,
+): Promise<ConcettoProgressRow[]> {
+  const { data, error } = await db
+    .from('concetti_progress')
+    .select('*')
+    .eq('user_id', userId)
+  if (error) throw error
+  return data ?? []
+}
+
+/** Progress del singolo concetto per l'utente, o null se non esiste ancora. */
+export async function getConcettoProgress(
+  db: DbClient,
+  userId: string,
+  concettoId: string,
+): Promise<ConcettoProgressRow | null> {
+  const { data, error } = await db
+    .from('concetti_progress')
+    .select('*')
+    .eq('user_id', userId)
+    .eq('concetto_id', concettoId)
+    .maybeSingle()
+  if (error) throw error
+  return data
+}
+
+/**
+ * Upsert dello stato R.O.T.T.A. per (user_id, concetto_id). Usa la
+ * UNIQUE(user_id, concetto_id) come conflict target.
+ */
+export async function upsertConcettoProgress(
+  db: DbClient,
+  row: TablesInsert<'concetti_progress'>,
+): Promise<ConcettoProgressRow> {
+  const { data, error } = await db
+    .from('concetti_progress')
+    .upsert(row, { onConflict: 'user_id,concetto_id' })
+    .select('*')
+    .single()
+  if (error) throw error
+  return data
+}
+
+// ----------------------------------------------------------------------------
+// Contenuti arricchiti per l'engine R.O.T.T.A.
+// ----------------------------------------------------------------------------
+
+/**
+ * Carica quiz items filtrati per fase non-automatizza e appartenenti ai
+ * concetti richiesti, arricchiti con `argomento_numero` (necessario
+ * all'engine per l'interleaving).
+ *
+ * Se `concettiIds` è vuoto, ritorna array vuoto (niente scan globale).
+ */
+export async function getQuizItemsForConcetti(
+  db: DbClient,
+  concettiIds: string[],
+  opts: { excludePhase?: FaseRottaDb } = {},
+): Promise<QuizItemWithArgomento[]> {
+  if (concettiIds.length === 0) return []
+  let q = db
+    .from('quiz_items')
+    .select('*, concetti!inner(argomenti!inner(numero))')
+    .in('concetto_id', concettiIds)
+  if (opts.excludePhase) {
+    q = q.neq('fase_rotta', opts.excludePhase)
+  }
+  const { data, error } = await q
+  if (error) throw error
+  return mapQuizItemsWithArgomento(data)
+}
+
+/** Come sopra ma per lista di `quiz_item.id`. */
+export async function getQuizItemsByIds(
+  db: DbClient,
+  ids: string[],
+): Promise<QuizItemWithArgomento[]> {
+  if (ids.length === 0) return []
+  const { data, error } = await db
+    .from('quiz_items')
+    .select('*, concetti!inner(argomenti!inner(numero))')
+    .in('id', ids)
+  if (error) throw error
+  return mapQuizItemsWithArgomento(data)
+}
+
+type JoinedQuizRow = QuizItem & {
+  concetti?: {
+    argomenti?: { numero?: number }
+  } | null
+}
+
+function mapQuizItemsWithArgomento(
+  rows: unknown[] | null,
+): QuizItemWithArgomento[] {
+  const list = (rows ?? []) as JoinedQuizRow[]
+  const out: QuizItemWithArgomento[] = []
+  for (const r of list) {
+    const numero = r.concetti?.argomenti?.numero
+    if (typeof numero !== 'number') continue
+    const base = { ...r }
+    delete base.concetti
+    out.push({ ...(base as QuizItem), argomento_numero: numero })
+  }
+  return out
+}
+
+/** Aggiorna i contatori aggregati della sessione in modo idempotente. */
+export async function updateSessioneCounters(
+  db: DbClient,
+  sessioneId: string,
+  patch: TablesUpdate<'sessioni'>,
+): Promise<Sessione> {
+  const { data, error } = await db
+    .from('sessioni')
+    .update(patch)
+    .eq('id', sessioneId)
+    .select('*')
+    .single()
+  if (error) throw error
+  return data
 }
