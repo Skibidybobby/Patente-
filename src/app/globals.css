@@ -1,26 +1,64 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+/*
+ * PatenteGo — design tokens (Tailwind v4, CSS-first @theme).
+ *
+ * Palette mobile-first, dark mode di default:
+ *   Background: zinc-950 / zinc-900
+ *   Testo:      zinc-50  / zinc-100
+ *   Accento:    indigo-500 (primary), indigo-400 (hover)
+ *   Feedback:   emerald-500 (ok), rose-500 (errore), amber-500 (warn)
+ *
+ * Font: Geist Sans (UI) + Geist Mono (timer, numeri).
+ */
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-border: var(--border);
+  --color-muted: var(--muted);
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --color-ok: var(--ok);
+  --color-danger: var(--danger);
+  --color-warn: var(--warn);
+
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+:root {
+  --background: #09090b;   /* zinc-950 */
+  --foreground: #fafafa;   /* zinc-50  */
+  --surface: #18181b;      /* zinc-900 */
+  --surface-2: #27272a;    /* zinc-800 */
+  --border: #3f3f46;       /* zinc-700 */
+  --muted: #a1a1aa;        /* zinc-400 */
+  --accent: #6366f1;       /* indigo-500 */
+  --accent-hover: #818cf8; /* indigo-400 */
+  --ok: #10b981;           /* emerald-500 */
+  --danger: #f43f5e;       /* rose-500 */
+  --warn: #f59e0b;         /* amber-500 */
 }
 
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+html,
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
 }
+
+body {
+  font-family: var(--font-sans), system-ui, sans-serif;
+  font-feature-settings: "cv11", "ss01";
+  min-height: 100dvh;
+}
+
+/* Safe-area padding per iOS notch su contenitori full-bleed. */
+.safe-top    { padding-top: env(safe-area-inset-top); }
+.safe-bottom { padding-bottom: env(safe-area-inset-bottom); }
